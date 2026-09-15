@@ -141,18 +141,185 @@
             margin: 2px 0;
             line-height: 1.4;
         }
+
+        /* ===== 听书知识库：视觉升级 ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-logo {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            background: linear-gradient(135deg, #1aa7ff, #5b7cfa);
+            box-shadow: 0 8px 18px rgba(26,167,255,.25);
+            flex: 0 0 auto;
+        }
+        .header-title h1 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin: 0;
+            text-align: left;
+        }
+        .header-title p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .btn-ghost {
+            background: #fff;
+            color: #5b7cfa;
+            border: 1px solid #d7dce6;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all .2s;
+        }
+        .btn-ghost:hover { border-color: #5b7cfa; }
+        .btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* 元数据(听书)表单 */
+        .meta-panel {
+            border: 1px solid #e6e9ef;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .meta-head {
+            padding: 12px 16px;
+            background: linear-gradient(90deg, rgba(26,167,255,.08), rgba(91,124,250,.08));
+            cursor: pointer;
+            font-size: 13px;
+            color: #3b4a5a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .meta-head b { color: #2c3e50; }
+        .meta-head .tag { margin-left: auto; font-size: 11px; color: #7a869a; }
+        .meta-body {
+            padding: 14px 16px 6px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 16px;
+        }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field.full { grid-column: 1 / -1; }
+        .field label { font-size: 12px; color: #7a869a; }
+        .field input, .field select {
+            padding: 9px 11px;
+            border: 1px solid #e6e9ef;
+            border-radius: 10px;
+            font-size: 13px;
+            outline: none;
+            transition: all .2s;
+        }
+        .field input:focus, .field select:focus {
+            border-color: rgba(26,167,255,.6);
+            box-shadow: 0 0 0 3px rgba(26,167,255,.12);
+        }
+        .field .hint-tip { font-size: 11px; color: #a3adbf; }
+
+        /* 上传说明行 */
+        .upload-hint {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        .fake-row { display: flex; gap: 8px; }
+        .fake-row .fake {
+            flex: 1;
+            border: 1px solid #e6e9ef;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #a3adbf;
+            text-align: left;
+            background: #fafbfd;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📄 听书库文件导入</h1>
-    
+    <!-- 导航头 -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo">🎧</div>
+            <div class="header-title">
+                <h1>听书知识库 · 内容导入</h1>
+                <p>上传书籍资料，支持有声书信息 / 书籍简介 / 作者介绍 / 听书笔记 / 推荐运营资料 / 用户评论摘要 / 常见问答</p>
+            </div>
+        </div>
+        <button class="btn-ghost" id="btnClearAll">清空列表</button>
+    </div>
+
+    <!-- 听书元数据面板（需求第5节字段，可展开/收起） -->
+    <div class="meta-panel">
+        <div class="meta-head" onclick="toggleMeta()">
+            <span>📋</span>
+            <b>书籍元数据（可选）</b>
+            <span class="tag">填写后优先使用，留空则由系统自动识别</span>
+        </div>
+        <div class="meta-body" id="metaBody" style="display:none;">
+            <div class="field">
+                <label>书名（item_name）</label>
+                <input type="text" id="metaItemName" placeholder="如：三体">
+            </div>
+            <div class="field">
+                <label>作者名（author_name）</label>
+                <input type="text" id="metaAuthor" placeholder="如：刘慈欣">
+            </div>
+            <div class="field">
+                <label>内容类型（content_type）</label>
+                <select id="metaContentType">
+                    <option value="">自动识别</option>
+                    <option>有声书信息</option>
+                    <option>书籍简介</option>
+                    <option>作者介绍</option>
+                    <option>听书笔记</option>
+                    <option>推荐运营资料</option>
+                    <option>用户评论摘要</option>
+                    <option>常见问答</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>类别 / 标签（category）</label>
+                <input type="text" id="metaCategory" placeholder="如：科幻 / 悬疑 / 儿童 / 教育">
+            </div>
+            <div class="field">
+                <label>有声书时长（audio_duration）</label>
+                <input type="text" id="metaDuration" placeholder="如：12小时35分钟">
+            </div>
+            <div class="field">
+                <label>来源路径 / 资源链接（source_path）</label>
+                <input type="text" id="metaSource" placeholder="如：https://…">
+            </div>
+        </div>
+    </div>
+
     <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <div class="upload-icon">☁️</div>
         <p>点击或拖拽文件到此处 (PDF/MD)</p>
+        <div class="fake-row" style="margin-top:6px;">
+            <div class="fake">📄 书籍简介 / 听书笔记</div>
+            <div class="fake">🎧 有声书信息 / 常见问答</div>
+            <div class="fake">👤 作者介绍 / 推荐运营</div>
+        </div>
         <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.md">
     </div>
+    <div class="upload-hint">支持多文件批量上传，请在下方列表查看处理进度与日志</div>
 
     <div id="fileList" class="file-list">
         <!-- 文件列表将在这里生成 -->
@@ -189,6 +356,36 @@
 
     function handleFiles(files) {
         Array.from(files).forEach(uploadFile);
+    }
+
+    // ===== 听书元数据表单辅助函数 =====
+    function toggleMeta() {
+        const body = document.getElementById('metaBody');
+        body.style.display = body.style.display === 'none' ? 'grid' : 'none';
+    }
+
+    // 读取元数据表单的值（只返回已填写的字段，保持与后端 Form 参数/需求第5节一致）
+    function getMetaFormData(formData) {
+        const defs = [
+            ['metaItemName', 'item_name'],
+            ['metaAuthor', 'author_name'],
+            ['metaContentType', 'content_type'],
+            ['metaCategory', 'category'],
+            ['metaDuration', 'audio_duration'],
+            ['metaSource', 'source_path'],
+        ];
+        for (const [inputId, fieldName] of defs) {
+            const el = document.getElementById(inputId);
+            const val = (el && el.value || '').trim();
+            if (val) formData.append(fieldName, val);
+        }
+    }
+
+    // 清空所有文件列表项
+    function clearAllFiles() {
+        if (!fileList.children.length) return;
+        if (!confirm('确定清空当前导入列表吗？')) return;
+        fileList.innerHTML = '';
     }
 
     function updateProgressBar(bar, percentage) {
@@ -231,6 +428,8 @@
         // 构建FormData
         const formData = new FormData();
         formData.append('files', file);
+        // 注入听书元数据（需求第5节字段，对应后端 Form 参数）
+        getMetaFormData(formData);
 
         try {
             // 1. 上传文件
@@ -260,6 +459,16 @@
             console.error(error);
             statusBadge.textContent = '失败';
             statusBadge.className = 'status-badge status-error';
+            // 失败后提供“重试”按钮，避免需刷新页面
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'btn-ghost';
+            retryBtn.textContent = '重试';
+            retryBtn.style.marginLeft = '8px';
+            retryBtn.addEventListener('click', () => {
+                itemEl.remove();
+                uploadFile(file);
+            });
+            statusBadge.parentNode.appendChild(retryBtn);
         }
     }
 
@@ -344,6 +553,9 @@
             }
         }, 2000); // 每2秒轮询一次
     }
+
+    // 清空全部
+    document.getElementById('btnClearAll').addEventListener('click', clearAllFiles);
 </script>
 
 </body>

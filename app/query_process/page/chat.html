@@ -258,6 +258,67 @@
       background:#f7f9fc;
       color:#3b4a5a;
     }
+
+    /* ===== 听书知识库：快捷提问 ===== */
+    .quick{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:4px 14px 0;
+    }
+    .chip{
+      border:1px solid var(--border);
+      background:#fff;
+      color:#56657a;
+      font-size:12px;
+      padding:7px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      transition:all .2s;
+      white-space:nowrap;
+    }
+    .chip:hover{
+      border-color:var(--brand);
+      color:var(--brand);
+      background:rgba(26,167,255,.06);
+    }
+
+    /* ===== 听书知识库：引用来源卡片 ===== */
+    .sources{
+      margin-top:10px;
+      border-top:1px dashed var(--border);
+      padding-top:8px;
+    }
+    .sources-label{
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .source-card{
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fafbfd;
+      padding:8px 10px;
+      margin:6px 0;
+      font-size:12px;
+    }
+    .source-card .src-title{
+      font-weight:600;
+      color:var(--text);
+    }
+    .source-card .src-tags{
+      margin-top:4px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .src-tag{
+      font-size:11px;
+      color:#56657a;
+      background:#eef2f7;
+      padding:2px 7px;
+      border-radius:999px;
+    }
   </style>
 </head>
 <body>
@@ -277,6 +338,16 @@
         <span class="pill" id="apiPill">API: 未连接</span>
         <button class="btn" id="btnClear">清空对话</button>
       </div>
+    </div>
+
+    <!-- 快捷提问：覆盖推荐 / 详情 / 检索 / 听书笔记 四大场景（需求 4.1-4.4） -->
+    <div class="quick" id="quickRow">
+      <button class="chip" data-q="帮我推荐几本适合通勤时听的悬疑有声书">🎧 推荐：悬疑有声书</button>
+      <button class="chip" data-q="推荐几本适合青少年听的科幻有声书">🎧 推荐：青少年科幻</button>
+      <button class="chip" data-q="《三体》讲了什么？有哪些亮点？有声书时长多长？">📖 详情：《三体》</button>
+      <button class="chip" data-q="《明朝那些事儿》的作者是谁？有哪些演播者？有声书时长多长？">📖 详情：《明朝那些事儿》</button>
+      <button class="chip" data-q="《三体》里最精彩的段落有哪些？">🔍 检索：《三体》精彩片段</button>
+      <button class="chip" data-q="有没有关于《三体》的听书笔记？">📝 笔记：《三体》听书笔记</button>
     </div>
 
     <div class="chat" id="chat">
@@ -454,7 +525,7 @@
       return keywords.some(k => t.includes(k));
     }
 
-    function renderAnswerWithImages(containerEl, answerText, candidateImageUrls){
+    function renderAnswerWithImages(containerEl, answerText, candidateImageUrls, sources){
       const { text, images: imagesFromBlock } = parseAnswerAndImages(answerText);
       const candidates = Array.isArray(candidateImageUrls)
         ? candidateImageUrls.map(normalizeUrl).filter(isImageUrl)
@@ -515,6 +586,34 @@
         }
         containerEl.appendChild(imgWrap);
       }
+
+      // 引用来源卡片（需求 4.3/4.4：返回书名、作者名、内容类型、文件名等来源信息）
+      if(Array.isArray(sources) && sources.length > 0){
+        renderSources(containerEl, sources);
+      }
+    }
+
+    // 渲染“引用来源”卡片（书名/作者/内容类型/文件名/音频时长）
+    function renderSources(containerEl, sources){
+      const wrap = document.createElement('div');
+      wrap.className = 'sources';
+      wrap.insertAdjacentHTML('beforeend', '<div class="sources-label">📚 参考答案来源</div>');
+      for(const s of sources){
+        if(!s) continue;
+        const tags = [];
+        if(s.author_name) tags.push(`作者：${s.author_name}`);
+        if(s.content_type) tags.push(`类型：${s.content_type}`);
+        if(s.category) tags.push(`类别：${s.category}`);
+        if(s.audio_duration) tags.push(`时长：${s.audio_duration}`);
+        if(s.file_title) tags.push(`文件：${s.file_title}`);
+        const tagHtml = tags.map(t => `<span class="src-tag">${escapeHtml(t)}</span>`).join('');
+        const title = s.item_name || s.file_title || '未命名来源';
+        const card = document.createElement('div');
+        card.className = 'source-card';
+        card.innerHTML = `<div class="src-title">${escapeHtml(title)}</div><div class="src-tags">${tagHtml}</div>`;
+        wrap.appendChild(card);
+      }
+      containerEl.appendChild(wrap);
     }
 
     function addUserMsg(text){
@@ -545,7 +644,7 @@
       scrollToBottom();
     }
 
-    function addBotMsgWithTime(text, ts, imageUrls){
+    function addBotMsgWithTime(text, ts, imageUrls, sources){
       const id = 'bot-his-' + Math.random().toString(36).slice(2);
       const html = `
         <div class="msg bot" id="${id}">
@@ -560,7 +659,7 @@
       const el = document.getElementById(id);
       if(el){
         const answerEl = el.querySelector('.answer');
-        renderAnswerWithImages(answerEl, text || '', imageUrls || []);
+        renderAnswerWithImages(answerEl, text || '', imageUrls || [], sources || []);
       }
       scrollToBottom();
     }
@@ -620,7 +719,7 @@
       }
     }
 
-    function finalizeBotAnswer(botMsgEl, answer, error, imageUrls){
+    function finalizeBotAnswer(botMsgEl, answer, error, imageUrls, sources){
       const bubble = botMsgEl.querySelector('.bubble');
       const progress = botMsgEl.querySelector('details.progress');
       const err = (error || '').trim();
@@ -649,7 +748,7 @@
       const answerEl = document.createElement('div');
       answerEl.className = 'answer';
       bubble.appendChild(answerEl);
-      renderAnswerWithImages(answerEl, answer || '', imageUrls || []);
+      renderAnswerWithImages(answerEl, answer || '', imageUrls || [], sources || []);
       if(progressEl) bubble.appendChild(progressEl);
     }
 
@@ -747,9 +846,9 @@
 
         if (!isStream) {
           // 非流式：直接拿到结果
-          // data: { session_id, answer, done_list, error, message }
+          // data: { session_id, answer, done_list, error, message, sources? }
           renderProgress(botMsgEl, data.done_list || [], [], 'completed');
-          finalizeBotAnswer(botMsgEl, data.answer, data.error, data.image_urls || []);
+          finalizeBotAnswer(botMsgEl, data.answer, data.error, data.image_urls || [], data.sources || []);
           sendBtn.disabled = false;
           return;
         }
@@ -807,7 +906,7 @@
             const d = JSON.parse(e.data || '{}');
             // 流式 delta 可能不包含“【图片】/图片列表”，最终包的 d.answer 才是完整答案；优先使用 d.answer
             const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
-            renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
+            renderAnswerWithImages(answerEl, finalText, d.image_urls || [], d.sources || []);
           }catch(_){}
           es.close();
           sendBtn.disabled = false;
@@ -823,7 +922,7 @@
           try{
             const d = JSON.parse(e.data || '{}');
             const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
-            renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
+            renderAnswerWithImages(answerEl, finalText, d.image_urls || [], d.sources || []);
           }catch(_){}
           es.close();
           sendBtn.disabled = false;
@@ -863,6 +962,17 @@
         e.preventDefault();
         onSend();
       }
+    });
+
+    // 快捷提问：点击后把示例问题填入输入框并发送
+    const quickRow = document.getElementById('quickRow');
+    quickRow.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      const q = chip.getAttribute('data-q') || '';
+      if(!q) return;
+      inputEl.value = q;
+      onSend();
     });
     btnClear.addEventListener('click', async () => {
       if(!confirm('确定要清空当前会话的历史记录吗？这将无法恢复。')) return;

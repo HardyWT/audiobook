@@ -290,7 +290,7 @@ if __name__ == "__main__":
     from app.utils.path_util import PROJECT_ROOT
     logger.info(f"测试获取根地址：{PROJECT_ROOT}")
 
-    test_pdf_name = os.path.join("doc", "hak180产品安全手册.pdf")
+    test_pdf_name = os.path.join("doc", "三体简介.pdf")
     test_pdf_path = os.path.join(PROJECT_ROOT, test_pdf_name)
 
     # 构造测试状态
